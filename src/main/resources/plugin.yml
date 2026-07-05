@@ -1,0 +1,9 @@
+name: MyPlugin
+version: 1.0
+main: com.example.myplugin.MyPlugin
+api-version: 1.20
+commands:
+  join:
+    description: Join the game
+  leave:
+    description: Leave the game
