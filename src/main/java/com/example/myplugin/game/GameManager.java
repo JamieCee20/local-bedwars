@@ -68,4 +68,8 @@ public class GameManager {
                 ? GameTeam.RED
                 : GameTeam.BLUE;
     }
+
+    public boolean isInGame() {
+        return state == GameState.IN_GAME || state == GameState.STARTING;
+    }
 }

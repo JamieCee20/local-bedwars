@@ -7,3 +7,5 @@ commands:
     description: Join the game
   leave:
     description: Leave the game
+  endgame:
+    description: Force end the game
