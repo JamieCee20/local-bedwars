@@ -3,11 +3,11 @@ package com.example.myplugin.game;
 import com.example.myplugin.MyPlugin;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 public class LobbyManager {
     private final MyPlugin plugin;
     private CountdownTask task;
-    private boolean running = false;
 
     public LobbyManager(MyPlugin plugin) {
         this.plugin = plugin;
@@ -22,10 +22,25 @@ public class LobbyManager {
             return;
         }
 
-        task = new CountdownTask(plugin, plugin.getGameManager().getCountdownTime());
-        task.runTaskTimer(plugin, 0L, 20L);
+        plugin.getServer().broadcast(Component.text("Preparing game world...", NamedTextColor.YELLOW));
 
-        plugin.getServer().broadcast(Component.text("Countdown Started!"));
+        // World creation + schematic pasting runs on the next tick so the command
+        // returns immediately, but still executes on the main thread (required by Bukkit).
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+
+            boolean ready = plugin.getWorldSetupManager().setupGameWorld();
+
+            if (!ready) {
+                plugin.getServer().broadcast(
+                        Component.text("Failed to prepare game world — check console for details.", NamedTextColor.RED));
+                return;
+            }
+
+            task = new CountdownTask(plugin, plugin.getGameManager().getCountdownTime());
+            task.runTaskTimer(plugin, 0L, 20L);
+
+            plugin.getServer().broadcast(Component.text("Countdown Started!", NamedTextColor.GREEN));
+        });
     }
 
     public void cancelCountdownIfNeeded() {
@@ -40,7 +55,8 @@ public class LobbyManager {
         }
 
         plugin.getGameManager().setLobby();
-        plugin.getServer().broadcast(Component.text("Countdown cancelled (not enough players)"));
+        plugin.getWorldSetupManager().teardownGameWorld();
+        plugin.getServer().broadcast(Component.text("Countdown cancelled (not enough players)", NamedTextColor.RED));
     }
 
     public void stopCountdown() {
@@ -48,7 +64,5 @@ public class LobbyManager {
             task.cancel();
             task = null;
         }
-
-        running = false;
     }
 }

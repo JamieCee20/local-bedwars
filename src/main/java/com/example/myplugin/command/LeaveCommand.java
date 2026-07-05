@@ -25,12 +25,21 @@ public class LeaveCommand implements CommandExecutor {
             return true;
         }
 
+        boolean wasInGame = plugin.getGameManager().isInGame();
+
         plugin.getPlayerManager().removePlayer(player.getUniqueId());
+        plugin.getPlayerManager().unfreezeAll();
 
-        player.sendMessage(Messages.parse(
-                "<red>You have left the game!</red>"));
+        player.sendMessage(Messages.parse("<red>You have left the game!</red>"));
+        player.teleport(plugin.getLobbyWorld().getSpawnLocation());
 
-        plugin.getLobbyManager().cancelCountdownIfNeeded();
+        if (wasInGame) {
+            // Mid-game leave — check if remaining players are all on one team (or none left)
+            plugin.getGameManager().checkForWinner();
+        } else {
+            // Lobby/countdown phase — cancel countdown and clean up the world if it was created
+            plugin.getLobbyManager().cancelCountdownIfNeeded();
+        }
 
         return true;
     }

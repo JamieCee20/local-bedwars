@@ -4,12 +4,16 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.example.myplugin.command.EndGameCommand;
 import com.example.myplugin.command.JoinCommand;
 import com.example.myplugin.command.LeaveCommand;
+import com.example.myplugin.command.ReloadCommand;
+import com.example.myplugin.command.SetupWorldCommand;
 import com.example.myplugin.enums.GameTeam;
 import com.example.myplugin.game.BedManager;
 import com.example.myplugin.game.GameManager;
@@ -17,7 +21,9 @@ import com.example.myplugin.game.LobbyManager;
 import com.example.myplugin.game.SpawnManager;
 import com.example.myplugin.listener.BlockProtectionListener;
 import com.example.myplugin.listener.PlayerDeathListener;
+import com.example.myplugin.listener.PlayerFreezeListener;
 import com.example.myplugin.player.PlayerManager;
+import com.example.myplugin.world.WorldSetupManager;
 
 public class MyPlugin extends JavaPlugin {
 
@@ -26,35 +32,111 @@ public class MyPlugin extends JavaPlugin {
     private LobbyManager lobbyManager;
     private SpawnManager spawnManager;
     private BedManager bedManager;
+    private WorldSetupManager worldSetupManager;
+
+    /** The static lobby world — set once at startup, never changes. */
+    private World lobbyWorld;
+
+    /** The active game world — replaced each time a new game is prepared. */
+    private World gameWorld;
+
     private final Set<Block> placedBlocks = new HashSet<>();
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
+
+        String lobbyWorldName = getConfig().getString("game.world", "world");
+        lobbyWorld = getServer().getWorld(lobbyWorldName);
+        if (lobbyWorld == null) {
+            getLogger().severe("Lobby world '" + lobbyWorldName + "' not found! Check 'game.world' in config.yml.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         playerManager = new PlayerManager();
         gameManager = new GameManager(this);
         lobbyManager = new LobbyManager(this);
-        spawnManager = new SpawnManager(getServer().getWorld("world"));
+        spawnManager = new SpawnManager();
         bedManager = new BedManager();
+        worldSetupManager = new WorldSetupManager(this);
+
         getCommand("join").setExecutor(new JoinCommand(this));
-
         getCommand("leave").setExecutor(new LeaveCommand(this));
-
         getCommand("endgame").setExecutor(new EndGameCommand(this));
+        getCommand("bwsetup").setExecutor(new SetupWorldCommand(this));
+        getCommand("bwreload").setExecutor(new ReloadCommand(this));
 
-        // Register beds manually for now
-        bedManager.setBed(GameTeam.RED, new Location(getServer().getWorld("world"), 765, 68, 76));
-        bedManager.setBed(GameTeam.BLUE, new Location(getServer().getWorld("world"), 709, 68, 20));
-
-        getServer().getPluginManager().registerEvents(
-                new BlockProtectionListener(this),
-                this);
-
-        getServer().getPluginManager().registerEvents(
-                new PlayerDeathListener(this),
-                this);
+        getServer().getPluginManager().registerEvents(new BlockProtectionListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerFreezeListener(this), this);
 
         getLogger().info("Plugin Enabled");
+    }
 
+    /**
+     * Called by WorldSetupManager once a new game world is ready.
+     * Updates the active game world reference and reloads all team locations into
+     * SpawnManager and BedManager so they point at the correct world.
+     */
+    public void setGameWorld(World world) {
+        this.gameWorld = world;
+        reloadTeamLocations(world);
+    }
+
+    public void reloadTeamLocations(World world) {
+        // Resolve the paste origin once — all team offsets are relative to this point
+        ConfigurationSection originSec = getConfig().getConfigurationSection("map.origin");
+        double ox = originSec != null ? originSec.getDouble("x", 0) : 0;
+        double oy = originSec != null ? originSec.getDouble("y", 64) : 64;
+        double oz = originSec != null ? originSec.getDouble("z", 0) : 0;
+
+        for (GameTeam team : GameTeam.values()) {
+            String key = "teams." + team.name();
+            ConfigurationSection sec = getConfig().getConfigurationSection(key);
+            if (sec == null) {
+                getLogger().warning("No config section for team: " + team.name());
+                continue;
+            }
+
+            Location spawn = readOffsetLocation(sec.getConfigurationSection("spawn"), world, ox, oy, oz);
+            if (spawn != null) {
+                spawnManager.setSpawn(team, spawn);
+            } else {
+                getLogger().warning("Missing spawn for team: " + team.name());
+            }
+
+            Location bed = readOffsetLocation(sec.getConfigurationSection("bed"), world, ox, oy, oz);
+            if (bed != null) {
+                bedManager.setBed(team, bed);
+            } else {
+                getLogger().warning("Missing bed for team: " + team.name());
+            }
+        }
+    }
+
+    /**
+     * Builds a Location from a config section whose x/y/z values are offsets
+     * relative to the schematic paste origin (ox, oy, oz).
+     */
+    private Location readOffsetLocation(ConfigurationSection sec, World world, double ox, double oy, double oz) {
+        if (sec == null) return null;
+        return new Location(
+                world,
+                sec.getDouble("x") + ox,
+                sec.getDouble("y") + oy,
+                sec.getDouble("z") + oz
+        );
+    }
+
+    // -------------------------------------------------------------------------
+
+    public World getLobbyWorld() {
+        return lobbyWorld;
+    }
+
+    public World getGameWorld() {
+        return gameWorld;
     }
 
     public PlayerManager getPlayerManager() {
@@ -73,12 +155,15 @@ public class MyPlugin extends JavaPlugin {
         return spawnManager;
     }
 
-    public Set<Block> getPlacedBlocks() {
-        return placedBlocks;
-    }
-
     public BedManager getBedManager() {
         return bedManager;
     }
 
+    public WorldSetupManager getWorldSetupManager() {
+        return worldSetupManager;
+    }
+
+    public Set<Block> getPlacedBlocks() {
+        return placedBlocks;
+    }
 }

@@ -29,7 +29,10 @@ public class JoinCommand implements CommandExecutor {
             return true;
         }
 
-        plugin.getPlayerManager().addPlayer(player.getUniqueId());
+        if (plugin.getPlayerManager().isInGame(player.getUniqueId())) {
+            player.sendMessage("You are already in the game!");
+            return true;
+        }
 
         PlayerData data = plugin.getPlayerManager()
                 .addPlayer(player.getUniqueId());

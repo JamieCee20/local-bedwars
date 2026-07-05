@@ -1,20 +1,20 @@
 package com.example.myplugin.game;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import org.bukkit.Location;
-import org.bukkit.World;
+
+import com.example.myplugin.enums.GameTeam;
 
 public class SpawnManager {
-    private final World world;
+    private final Map<GameTeam, Location> spawns = new EnumMap<>(GameTeam.class);
 
-    public SpawnManager(World world) {
-        this.world = world;
+    public void setSpawn(GameTeam team, Location location) {
+        spawns.put(team, location);
     }
 
-    public Location getRedSpawn() {
-        return new Location(world, 776, 69, 73);
-    }
-
-    public Location getBlueSpawn() {
-        return new Location(world, 718, 69, 17);
+    public Location getSpawn(GameTeam team) {
+        return spawns.get(team);
     }
 }

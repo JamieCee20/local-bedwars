@@ -1,7 +1,9 @@
 package com.example.myplugin.game;
 
 import java.time.Duration;
+import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.GameMode;
@@ -18,9 +20,6 @@ import net.kyori.adventure.title.Title;
 
 public class GameManager {
     private GameState state = GameState.LOBBY;
-
-    private final int MIN_PLAYERS = 1;
-    private final int COUNTDOWN_TIME = 10;
 
     private final MyPlugin plugin;
 
@@ -41,11 +40,11 @@ public class GameManager {
     }
 
     public int getMinPlayers() {
-        return MIN_PLAYERS;
+        return plugin.getConfig().getInt("game.min-players", 1);
     }
 
     public int getCountdownTime() {
-        return COUNTDOWN_TIME;
+        return plugin.getConfig().getInt("game.countdown-time", 10);
     }
 
     public void setLobby() {
@@ -61,23 +60,21 @@ public class GameManager {
     }
 
     public GameTeam getNextTeam() {
-        int red = 0;
-        int blue = 0;
+        Map<GameTeam, Integer> counts = new EnumMap<>(GameTeam.class);
+        for (GameTeam team : GameTeam.values()) {
+            counts.put(team, 0);
+        }
 
         for (PlayerData data : plugin.getPlayerManager().getPlayers()) {
-
-            if (data.getTeam() == GameTeam.RED) {
-                red++;
-            }
-
-            if (data.getTeam() == GameTeam.BLUE) {
-                blue++;
+            if (data.getTeam() != null) {
+                counts.merge(data.getTeam(), 1, Integer::sum);
             }
         }
 
-        return red <= blue
-                ? GameTeam.RED
-                : GameTeam.BLUE;
+        return counts.entrySet().stream()
+                .min(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(GameTeam.RED);
     }
 
     public boolean isInGame() {
@@ -86,19 +83,26 @@ public class GameManager {
 
     public void checkForWinner() {
 
+        Set<GameTeam> participatingTeams = new HashSet<>();
         Set<GameTeam> aliveTeams = new HashSet<>();
 
         for (PlayerData data : plugin.getPlayerManager().getPlayers()) {
-
-            if (!data.isAlive())
-                continue;
-
-            aliveTeams.add(data.getTeam());
+            participatingTeams.add(data.getTeam());
+            if (data.isAlive()) {
+                aliveTeams.add(data.getTeam());
+            }
         }
 
+        boolean devMode = plugin.getConfig().getBoolean("game.dev-mode", false);
+
+        // In normal mode require 2+ teams so a solo tester can't accidentally win immediately.
+        // In dev mode this check is skipped so a single player can test the full win flow.
+        if (!devMode && participatingTeams.size() < 2) return;
+
         if (aliveTeams.size() == 1) {
-            GameTeam winner = aliveTeams.iterator().next();
-            endGame(winner);
+            endGame(aliveTeams.iterator().next());
+        } else if (aliveTeams.isEmpty()) {
+            endGame(null);
         }
     }
 
@@ -119,15 +123,22 @@ public class GameManager {
                                 Duration.ofMillis(0),
                                 Duration.ofSeconds(2),
                                 Duration.ofMillis(0))));
-        // plugin.getServer().broadcast(
-        // Component.text("Game Over! Winner: " +
-        // (winner != null ? winner.name() : "None")));
 
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
+        // Only reset players who were actually in the game
+        for (PlayerData data : plugin.getPlayerManager().getPlayers()) {
+            Player player = plugin.getServer().getPlayer(data.getUuid());
+            if (player == null) continue;
 
             player.getInventory().clear();
             player.setGameMode(GameMode.ADVENTURE);
-            player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
+            player.teleport(plugin.getLobbyWorld().getSpawnLocation());
         }
+
+        // Reset state so a new game can be started fresh
+        plugin.getPlayerManager().clearPlayers();
+        plugin.getBedManager().resetBeds();
+
+        // Tear down the game world — deleted from disk so the next game gets a clean slate
+        plugin.getWorldSetupManager().teardownGameWorld();
     }
 }

@@ -2,6 +2,7 @@ name: MyPlugin
 version: 1.0
 main: com.example.myplugin.MyPlugin
 api-version: 1.20
+depend: [WorldEdit]
 commands:
   join:
     description: Join the game
@@ -9,3 +10,8 @@ commands:
     description: Leave the game
   endgame:
     description: Force end the game
+  bwreload:
+    description: Reload the plugin config without restarting
+  bwsetup:
+    description: Admin command to create a void world and paste the map schematic for coordinate setup
+    usage: /bwsetup <create|tp|delete>

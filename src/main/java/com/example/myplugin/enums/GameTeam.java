@@ -5,7 +5,9 @@ import net.kyori.adventure.text.format.NamedTextColor;
 
 public enum GameTeam {
     RED(NamedTextColor.RED, "Red"),
-    BLUE(NamedTextColor.BLUE, "Blue");
+    BLUE(NamedTextColor.BLUE, "Blue"),
+    GREEN(NamedTextColor.GREEN, "Green"),
+    YELLOW(NamedTextColor.YELLOW, "Yellow");
 
     private final NamedTextColor color;
     private final String displayName;

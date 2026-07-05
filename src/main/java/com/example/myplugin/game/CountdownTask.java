@@ -5,7 +5,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import com.example.myplugin.MyPlugin;
-import com.example.myplugin.enums.GameTeam;
 import com.example.myplugin.player.PlayerData;
 import com.example.myplugin.util.Messages;
 
@@ -39,16 +38,10 @@ public class CountdownTask extends BukkitRunnable {
                 if (player == null)
                     continue;
 
-                if (data.getTeam() == GameTeam.RED) {
-                    player.teleport(plugin.getSpawnManager().getRedSpawn());
-                }
-
-                if (data.getTeam() == GameTeam.BLUE) {
-                    player.teleport(plugin.getSpawnManager().getBlueSpawn());
-                }
-
+                player.teleport(plugin.getSpawnManager().getSpawn(data.getTeam()));
                 player.setGameMode(GameMode.SURVIVAL);
                 player.getInventory().clear();
+                plugin.getPlayerManager().freezePlayer(player.getUniqueId());
             }
             new InGameCountdown(plugin).runTaskTimer(plugin, 0L, 20L);
             cancel();

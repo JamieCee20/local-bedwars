@@ -77,11 +77,7 @@ public class PlayerDeathListener implements Listener {
     }
 
     private Location getTeamSpawn(GameTeam team) {
-
-        return switch (team) {
-            case RED -> plugin.getSpawnManager().getRedSpawn();
-            case BLUE -> plugin.getSpawnManager().getBlueSpawn();
-        };
+        return plugin.getSpawnManager().getSpawn(team);
     }
 
     private void handleElimination(Player player, PlayerData data) {
