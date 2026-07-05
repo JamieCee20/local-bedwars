@@ -7,6 +7,9 @@ import org.bukkit.event.block.BlockPlaceEvent;
 
 import com.example.myplugin.MyPlugin;
 import com.example.myplugin.enums.GameState;
+import com.example.myplugin.enums.GameTeam;
+
+import net.kyori.adventure.text.Component;
 
 public class BlockProtectionListener implements Listener {
 
@@ -30,19 +33,48 @@ public class BlockProtectionListener implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
 
-        // HARD BLOCK EVERYTHING FIRST
         if (plugin.getGameManager().getState() != GameState.IN_GAME) {
             event.setCancelled(true);
             return;
         }
 
-        // default rule: DO NOT allow breaking anything
-        event.setCancelled(true);
+        // 🟡 1. BED LOGIC FIRST (IMPORTANT)
+        GameTeam team = plugin.getBedManager()
+                .getTeamFromLocation(event.getBlock().getLocation());
 
-        // only allow player placed blocks
+        if (team != null) {
+
+            GameTeam playerTeam = plugin.getPlayerManager().getPlayer(event.getPlayer().getUniqueId()).getTeam();
+
+            if (team == playerTeam) {
+                event.setCancelled(true);
+                return;
+            }
+
+            if (!plugin.getBedManager().isBedAlive(team)) {
+                event.setCancelled(true);
+                return;
+            }
+
+            plugin.getBedManager().breakBed(team);
+
+            plugin.getServer().broadcast(
+                    Component.text(team.name() + " bed has been destroyed!"));
+
+            plugin.getGameManager().checkForWinner();
+
+            event.setDropItems(false);
+            return;
+        }
+
+        // 🟢 2. PLAYER PLACED BLOCKS
         if (plugin.getPlacedBlocks().contains(event.getBlock())) {
             plugin.getPlacedBlocks().remove(event.getBlock());
             event.setCancelled(false);
+            return;
         }
+
+        // 🔴 3. EVERYTHING ELSE = PROTECTED ARENA
+        event.setCancelled(true);
     }
 }

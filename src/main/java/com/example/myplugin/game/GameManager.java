@@ -1,9 +1,20 @@
 package com.example.myplugin.game;
 
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.bukkit.GameMode;
+import org.bukkit.entity.Player;
+
 import com.example.myplugin.MyPlugin;
 import com.example.myplugin.enums.GameState;
 import com.example.myplugin.enums.GameTeam;
 import com.example.myplugin.player.PlayerData;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
 
 public class GameManager {
     private GameState state = GameState.LOBBY;
@@ -71,5 +82,52 @@ public class GameManager {
 
     public boolean isInGame() {
         return state == GameState.IN_GAME || state == GameState.STARTING;
+    }
+
+    public void checkForWinner() {
+
+        Set<GameTeam> aliveTeams = new HashSet<>();
+
+        for (PlayerData data : plugin.getPlayerManager().getPlayers()) {
+
+            if (!data.isAlive())
+                continue;
+
+            aliveTeams.add(data.getTeam());
+        }
+
+        if (aliveTeams.size() == 1) {
+            GameTeam winner = aliveTeams.iterator().next();
+            endGame(winner);
+        }
+    }
+
+    public void endGame(GameTeam winner) {
+
+        setLobby();
+
+        plugin.getLobbyManager().stopCountdown();
+        plugin.getPlacedBlocks().clear();
+
+        plugin.getServer().showTitle(
+                Title.title(
+                        Component.text("GAME OVER!", NamedTextColor.GREEN),
+                        Component.text(
+                                winner != null ? winner.name() + " Team WINS!" : "None",
+                                winner != null ? winner.getColor() : null),
+                        Title.Times.times(
+                                Duration.ofMillis(0),
+                                Duration.ofSeconds(2),
+                                Duration.ofMillis(0))));
+        // plugin.getServer().broadcast(
+        // Component.text("Game Over! Winner: " +
+        // (winner != null ? winner.name() : "None")));
+
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+
+            player.getInventory().clear();
+            player.setGameMode(GameMode.ADVENTURE);
+            player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
+        }
     }
 }

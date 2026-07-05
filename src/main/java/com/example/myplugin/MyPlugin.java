@@ -3,16 +3,20 @@ package com.example.myplugin;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.example.myplugin.command.EndGameCommand;
 import com.example.myplugin.command.JoinCommand;
 import com.example.myplugin.command.LeaveCommand;
+import com.example.myplugin.enums.GameTeam;
+import com.example.myplugin.game.BedManager;
 import com.example.myplugin.game.GameManager;
 import com.example.myplugin.game.LobbyManager;
 import com.example.myplugin.game.SpawnManager;
 import com.example.myplugin.listener.BlockProtectionListener;
+import com.example.myplugin.listener.PlayerDeathListener;
 import com.example.myplugin.player.PlayerManager;
 
 public class MyPlugin extends JavaPlugin {
@@ -21,6 +25,7 @@ public class MyPlugin extends JavaPlugin {
     private GameManager gameManager;
     private LobbyManager lobbyManager;
     private SpawnManager spawnManager;
+    private BedManager bedManager;
     private final Set<Block> placedBlocks = new HashSet<>();
 
     @Override
@@ -29,14 +34,23 @@ public class MyPlugin extends JavaPlugin {
         gameManager = new GameManager(this);
         lobbyManager = new LobbyManager(this);
         spawnManager = new SpawnManager(getServer().getWorld("world"));
+        bedManager = new BedManager();
         getCommand("join").setExecutor(new JoinCommand(this));
 
         getCommand("leave").setExecutor(new LeaveCommand(this));
 
         getCommand("endgame").setExecutor(new EndGameCommand(this));
 
+        // Register beds manually for now
+        bedManager.setBed(GameTeam.RED, new Location(getServer().getWorld("world"), 765, 68, 76));
+        bedManager.setBed(GameTeam.BLUE, new Location(getServer().getWorld("world"), 709, 68, 20));
+
         getServer().getPluginManager().registerEvents(
                 new BlockProtectionListener(this),
+                this);
+
+        getServer().getPluginManager().registerEvents(
+                new PlayerDeathListener(this),
                 this);
 
         getLogger().info("Plugin Enabled");
@@ -61,6 +75,10 @@ public class MyPlugin extends JavaPlugin {
 
     public Set<Block> getPlacedBlocks() {
         return placedBlocks;
+    }
+
+    public BedManager getBedManager() {
+        return bedManager;
     }
 
 }
