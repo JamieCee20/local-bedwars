@@ -39,7 +39,7 @@ public class BlockProtectionListener implements Listener {
             return;
         }
 
-        // 🟡 1. BED LOGIC FIRST (IMPORTANT)
+        // BED LOGIC
         GameTeam team = plugin.getBedManager()
                 .getTeamFromLocation(event.getBlock().getLocation());
 
@@ -68,14 +68,14 @@ public class BlockProtectionListener implements Listener {
             return;
         }
 
-        // 🟢 2. PLAYER PLACED BLOCKS
+        // PLAYER PLACED BLOCKS
         if (plugin.getPlacedBlocks().contains(event.getBlock())) {
             plugin.getPlacedBlocks().remove(event.getBlock());
             event.setCancelled(false);
             return;
         }
 
-        // 🔴 3. EVERYTHING ELSE = PROTECTED ARENA
+        // EVERYTHING ELSE = PROTECTED ARENA
         event.setCancelled(true);
     }
 }
