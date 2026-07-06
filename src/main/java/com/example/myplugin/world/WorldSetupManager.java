@@ -47,6 +47,11 @@ public class WorldSetupManager {
             return false;
         }
 
+        gameWorld.setSpawnFlags(false, false); // no hostile, no passive mobs
+
+        gameWorld.setFullTime(1200);
+        gameWorld.setClearWeatherDuration(1000);
+
         if (!pasteSchematic(gameWorld)) {
             // Cleanup the empty world so it doesn't linger
             Bukkit.unloadWorld(gameWorld, false);

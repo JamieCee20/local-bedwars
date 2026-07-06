@@ -1,5 +1,6 @@
 package com.example.myplugin.listener;
 
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -59,7 +60,7 @@ public class BlockProtectionListener implements Listener {
             plugin.getBedManager().breakBed(team);
 
             plugin.getServer().broadcast(
-                    Component.text(team.name() + " bed has been destroyed!"));
+                    Component.text(team.getDisplayName(), team.getColor()).append(Component.text(" bed has been destroyed!", NamedTextColor.GRAY)));
 
             plugin.getGameManager().checkForWinner();
 

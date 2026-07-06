@@ -30,6 +30,7 @@ public class LeaveCommand implements CommandExecutor {
         plugin.getPlayerManager().removePlayer(player.getUniqueId());
         plugin.getPlayerManager().unfreezeAll();
 
+        player.getInventory().clear();
         player.sendMessage(Messages.parse("<red>You have left the game!</red>"));
         player.teleport(plugin.getLobbyWorld().getSpawnLocation());
 

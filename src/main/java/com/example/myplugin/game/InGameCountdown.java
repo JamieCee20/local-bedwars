@@ -26,6 +26,8 @@ public class InGameCountdown extends BukkitRunnable {
 
             plugin.getPlayerManager().unfreezeAll();
             plugin.getGameManager().setInGame();
+            plugin.getGeneratorManager().start(plugin);
+            plugin.getGeneratorManager().startCleanupTask(plugin);
 
             plugin.getServer().showTitle(
                 Title.title(

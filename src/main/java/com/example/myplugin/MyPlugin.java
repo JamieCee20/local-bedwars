@@ -17,11 +17,14 @@ import com.example.myplugin.command.SetupWorldCommand;
 import com.example.myplugin.enums.GameTeam;
 import com.example.myplugin.game.BedManager;
 import com.example.myplugin.game.GameManager;
+import com.example.myplugin.game.GeneratorManager;
 import com.example.myplugin.game.LobbyManager;
 import com.example.myplugin.game.SpawnManager;
 import com.example.myplugin.listener.BlockProtectionListener;
 import com.example.myplugin.listener.PlayerDeathListener;
 import com.example.myplugin.listener.PlayerFreezeListener;
+import com.example.myplugin.listener.PlayerJoinListener;
+import com.example.myplugin.listener.PlayerQuitListener;
 import com.example.myplugin.player.PlayerManager;
 import com.example.myplugin.world.WorldSetupManager;
 
@@ -32,6 +35,7 @@ public class MyPlugin extends JavaPlugin {
     private LobbyManager lobbyManager;
     private SpawnManager spawnManager;
     private BedManager bedManager;
+    private GeneratorManager generatorManager;
     private WorldSetupManager worldSetupManager;
 
     /** The static lobby world — set once at startup, never changes. */
@@ -59,6 +63,7 @@ public class MyPlugin extends JavaPlugin {
         lobbyManager = new LobbyManager(this);
         spawnManager = new SpawnManager();
         bedManager = new BedManager();
+        generatorManager = new GeneratorManager();
         worldSetupManager = new WorldSetupManager(this);
 
         getCommand("join").setExecutor(new JoinCommand(this));
@@ -70,6 +75,8 @@ public class MyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BlockProtectionListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerFreezeListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
 
         getLogger().info("Plugin Enabled");
     }
@@ -112,6 +119,23 @@ public class MyPlugin extends JavaPlugin {
             } else {
                 getLogger().warning("Missing bed for team: " + team.name());
             }
+        }
+
+        // Load generator locations (also offsets from origin)
+        generatorManager.reset();
+        var diamondList = getConfig().getMapList("generators.diamonds");
+        for (var entry : diamondList) {
+            double x = ((Number) entry.get("x")).doubleValue();
+            double y = ((Number) entry.get("y")).doubleValue();
+            double z = ((Number) entry.get("z")).doubleValue();
+            generatorManager.addDiamondSpawn(new Location(world, x + ox, y + oy, z + oz));
+        }
+        var emeraldList = getConfig().getMapList("generators.emeralds");
+        for (var entry : emeraldList) {
+            double x = ((Number) entry.get("x")).doubleValue();
+            double y = ((Number) entry.get("y")).doubleValue();
+            double z = ((Number) entry.get("z")).doubleValue();
+            generatorManager.addEmeraldSpawns(new Location(world, x + ox, y + oy, z + oz));
         }
     }
 
@@ -157,6 +181,10 @@ public class MyPlugin extends JavaPlugin {
 
     public BedManager getBedManager() {
         return bedManager;
+    }
+
+    public GeneratorManager getGeneratorManager() {
+        return generatorManager;
     }
 
     public WorldSetupManager getWorldSetupManager() {

@@ -10,6 +10,8 @@ commands:
     description: Leave the game
   endgame:
     description: Force end the game
+  bwreload:
+    description: Reload the plugin config without restarting
   bwsetup:
     description: Admin command to create a void world and paste the map schematic for coordinate setup
     usage: /bwsetup <create|tp|delete>

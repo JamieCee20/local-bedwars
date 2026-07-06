@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.GameMode;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 
 import com.example.myplugin.MyPlugin;
@@ -83,13 +86,27 @@ public class GameManager {
 
     public void checkForWinner() {
 
-        Set<GameTeam> participatingTeams = new HashSet<>();
-        Set<GameTeam> aliveTeams = new HashSet<>();
-
+        // Track which teams have at least one alive player
+        Map<GameTeam, Boolean> teamHasAlivePlayer = new EnumMap<>(GameTeam.class);
         for (PlayerData data : plugin.getPlayerManager().getPlayers()) {
-            participatingTeams.add(data.getTeam());
+            GameTeam team = data.getTeam();
             if (data.isAlive()) {
-                aliveTeams.add(data.getTeam());
+                teamHasAlivePlayer.put(team, true);
+            } else {
+                teamHasAlivePlayer.putIfAbsent(team, false);
+            }
+        }
+
+        // A team is still "in the game" if it has a living bed OR a living player.
+        // This ensures teams with beds but no players (e.g. in dev-mode solo tests)
+        // still count as active and must be eliminated before a winner is declared.
+        BedManager bedManager = plugin.getBedManager();
+        Set<GameTeam> teamsInGame = new HashSet<>();
+        for (GameTeam team : bedManager.getAllTeams()) {
+            boolean hasBed = bedManager.isBedAlive(team);
+            boolean hasAlivePlayer = teamHasAlivePlayer.getOrDefault(team, false);
+            if (hasBed || hasAlivePlayer) {
+                teamsInGame.add(team);
             }
         }
 
@@ -97,11 +114,11 @@ public class GameManager {
 
         // In normal mode require 2+ teams so a solo tester can't accidentally win immediately.
         // In dev mode this check is skipped so a single player can test the full win flow.
-        if (!devMode && participatingTeams.size() < 2) return;
+        if (!devMode && teamsInGame.size() < 2) return;
 
-        if (aliveTeams.size() == 1) {
-            endGame(aliveTeams.iterator().next());
-        } else if (aliveTeams.isEmpty()) {
+        if (teamsInGame.size() == 1) {
+            endGame(teamsInGame.iterator().next());
+        } else if (teamsInGame.isEmpty()) {
             endGame(null);
         }
     }
@@ -111,6 +128,7 @@ public class GameManager {
         setLobby();
 
         plugin.getLobbyManager().stopCountdown();
+        plugin.getGeneratorManager().stop();
         plugin.getPlacedBlocks().clear();
 
         plugin.getServer().showTitle(
@@ -121,7 +139,7 @@ public class GameManager {
                                 winner != null ? winner.getColor() : null),
                         Title.Times.times(
                                 Duration.ofMillis(0),
-                                Duration.ofSeconds(2),
+                                Duration.ofSeconds(4),
                                 Duration.ofMillis(0))));
 
         // Only reset players who were actually in the game
@@ -137,6 +155,16 @@ public class GameManager {
         // Reset state so a new game can be started fresh
         plugin.getPlayerManager().clearPlayers();
         plugin.getBedManager().resetBeds();
+
+        // Clear all item drops from the game world before tearing it down
+        World gameWorld = plugin.getGameWorld();
+        if (gameWorld != null) {
+            for (Entity entity : gameWorld.getEntities()) {
+                if (entity instanceof Item) {
+                    entity.remove();
+                }
+            }
+        }
 
         // Tear down the game world — deleted from disk so the next game gets a clean slate
         plugin.getWorldSetupManager().teardownGameWorld();
