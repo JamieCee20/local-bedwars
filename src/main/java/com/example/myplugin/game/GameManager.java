@@ -116,6 +116,12 @@ public class GameManager {
         // In dev mode this check is skipped so a single player can test the full win flow.
         if (!devMode && teamsInGame.size() < 2) return;
 
+        if(plugin.getPlayerManager().getPlayers().isEmpty()) {
+            plugin.getLogger().info("Game ended due to no players");
+            endGame(null);
+            return;
+        }
+
         if (teamsInGame.size() == 1) {
             endGame(teamsInGame.iterator().next());
         } else if (teamsInGame.isEmpty()) {

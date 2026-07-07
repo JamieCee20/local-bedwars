@@ -137,6 +137,21 @@ public class MyPlugin extends JavaPlugin {
             double z = ((Number) entry.get("z")).doubleValue();
             generatorManager.addEmeraldSpawns(new Location(world, x + ox, y + oy, z + oz));
         }
+
+        for (GameTeam team : GameTeam.values()) {
+            String path = "teams." + team.name();
+            var ironSec = getConfig().getConfigurationSection(path + ".generators.iron");
+            var goldSec = getConfig().getConfigurationSection(path + ".generators.gold");
+
+            if (ironSec != null) {
+                double x = ironSec.getDouble("x"), y = ironSec.getDouble("y"), z = ironSec.getDouble("z");
+                generatorManager.addIronSpawn(new Location(world, x + ox, y + oy, z + oz));
+            }
+            if (goldSec != null) {
+                double x = goldSec.getDouble("x"), y = goldSec.getDouble("y"), z = goldSec.getDouble("z");
+                generatorManager.addGoldSpawn(new Location(world, x + ox, y + oy, z + oz));
+            }
+        }
     }
 
     /**

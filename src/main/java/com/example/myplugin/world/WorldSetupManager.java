@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.configuration.ConfigurationSection;
@@ -49,8 +50,7 @@ public class WorldSetupManager {
 
         gameWorld.setSpawnFlags(false, false); // no hostile, no passive mobs
 
-        gameWorld.setFullTime(1200);
-        gameWorld.setClearWeatherDuration(1000);
+        configureArenaWorld(gameWorld);
 
         if (!pasteSchematic(gameWorld)) {
             // Cleanup the empty world so it doesn't linger
@@ -61,6 +61,24 @@ public class WorldSetupManager {
         // Update the plugin's active game world and re-register all team locations
         plugin.setGameWorld(gameWorld);
         return true;
+    }
+
+    /**
+     * Setup time and weather
+     *
+     * @param world
+     */
+    private void configureArenaWorld(World world) {
+        world.setStorm(false);
+        world.setThundering(false);
+        world.setClearWeatherDuration(Integer.MAX_VALUE);
+
+        world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+
+        world.setTime(6000);
     }
 
     /**

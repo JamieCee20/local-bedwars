@@ -29,6 +29,15 @@ teams:
       x: 54.0
       y: -2.0
       z: 1.0
+    generators:
+      iron:
+        x: 68.0
+        y: -3.0
+        z: -2
+      gold:
+        x: 68.0
+        y: -3.0
+        z: -2
   BLUE:
     spawn:
       x: 6.0
@@ -38,6 +47,15 @@ teams:
       x: -3.0
       y: -2.0
       z: -55.0
+    generators:
+      iron:
+        x: 6.0
+        y: -3.0
+        z: -62.0
+      gold:
+        x: 6.0
+        y: -3.0
+        z: -62.0
   GREEN:
     spawn:
       x: -72.0
@@ -47,6 +65,15 @@ teams:
       x: -61.0
       y: 0.0
       z: 7.0
+    generators:
+      iron:
+        x: -76.0
+        y: -1.0
+        z: 11.0
+      gold:
+        x: -76.0
+        y: -1.0
+        z: 11.0
   YELLOW:
     spawn:
       x: 0.0
@@ -56,6 +83,15 @@ teams:
       x: 10.0
       y: -4
       z: 54.0
+    generators:
+      iron:
+        x: 0.0
+        y: -5.0
+        z: 62.0
+      gold:
+        x: 0.0
+        y: -5.0
+        z: 62.0
 
 generators:
   diamonds:
