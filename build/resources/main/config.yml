@@ -29,6 +29,10 @@ teams:
       x: 54.0
       y: -2.0
       z: 1.0
+    shop:
+      x: 64.0
+      y: -2.0
+      z: 2.0
     generators:
       iron:
         x: 68.0
@@ -47,6 +51,10 @@ teams:
       x: -3.0
       y: -2.0
       z: -55.0
+    shop:
+      x: 10.0
+      y: -2.0
+      z: -58.0
     generators:
       iron:
         x: 6.0
@@ -63,6 +71,10 @@ teams:
       z: 11.0
     bed:
       x: -61.0
+      y: 0.0
+      z: 7.0
+    shop:
+      x: -72.0
       y: 0.0
       z: 7.0
     generators:
@@ -83,6 +95,10 @@ teams:
       x: 10.0
       y: -4
       z: 54.0
+    shop:
+      x: -4.0
+      y: -4.0
+      z: 58.0
     generators:
       iron:
         x: 0.0

@@ -11,6 +11,7 @@ import com.example.myplugin.MyPlugin;
 import com.example.myplugin.enums.GameState;
 import com.example.myplugin.enums.GameTeam;
 import com.example.myplugin.player.PlayerData;
+import org.bukkit.event.player.PlayerRespawnEvent;
 
 public class PlayerDeathListener implements Listener {
 
@@ -54,25 +55,34 @@ public class PlayerDeathListener implements Listener {
         plugin.getGameManager().checkForWinner();
     }
 
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+
+        if (plugin.getGameManager().getState() != GameState.IN_GAME) return;
+
+        PlayerData data = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+        if (data == null) return;
+
+        GameTeam team = data.getTeam();
+        Location spawn = plugin.getSpawnManager().getSpawn(team);
+        if (spawn != null) {
+            event.setRespawnLocation(spawn);
+        }
+    }
+
     private void handleRespawn(Player player, PlayerData data, GameTeam team) {
 
         player.sendMessage("You will respawn in 5 seconds...");
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-
-            if (plugin.getGameManager().getState() != GameState.IN_GAME)
-                return;
-
+            if (plugin.getGameManager().getState() != GameState.IN_GAME) return;
             data.setAlive(true);
-
-            player.teleport(getTeamSpawn(team));
             player.setHealth(20);
             player.setFoodLevel(20);
             player.getInventory().clear();
             player.setGameMode(GameMode.SURVIVAL);
-
             player.sendMessage("You have respawned!");
-
         }, 20L * 5);
     }
 

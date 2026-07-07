@@ -3,6 +3,8 @@ package com.example.myplugin;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.example.myplugin.game.*;
+import com.example.myplugin.listener.*;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -15,16 +17,6 @@ import com.example.myplugin.command.LeaveCommand;
 import com.example.myplugin.command.ReloadCommand;
 import com.example.myplugin.command.SetupWorldCommand;
 import com.example.myplugin.enums.GameTeam;
-import com.example.myplugin.game.BedManager;
-import com.example.myplugin.game.GameManager;
-import com.example.myplugin.game.GeneratorManager;
-import com.example.myplugin.game.LobbyManager;
-import com.example.myplugin.game.SpawnManager;
-import com.example.myplugin.listener.BlockProtectionListener;
-import com.example.myplugin.listener.PlayerDeathListener;
-import com.example.myplugin.listener.PlayerFreezeListener;
-import com.example.myplugin.listener.PlayerJoinListener;
-import com.example.myplugin.listener.PlayerQuitListener;
 import com.example.myplugin.player.PlayerManager;
 import com.example.myplugin.world.WorldSetupManager;
 
@@ -37,6 +29,7 @@ public class MyPlugin extends JavaPlugin {
     private BedManager bedManager;
     private GeneratorManager generatorManager;
     private WorldSetupManager worldSetupManager;
+    private ShopManager shopManager;
 
     /** The static lobby world — set once at startup, never changes. */
     private World lobbyWorld;
@@ -65,6 +58,7 @@ public class MyPlugin extends JavaPlugin {
         bedManager = new BedManager();
         generatorManager = new GeneratorManager();
         worldSetupManager = new WorldSetupManager(this);
+        shopManager = new ShopManager(this);
 
         getCommand("join").setExecutor(new JoinCommand(this));
         getCommand("leave").setExecutor(new LeaveCommand(this));
@@ -77,6 +71,7 @@ public class MyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerFreezeListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
+        getServer().getPluginManager().registerEvents(new ShopListener(this), this);
 
         getLogger().info("Plugin Enabled");
     }
@@ -89,6 +84,10 @@ public class MyPlugin extends JavaPlugin {
     public void setGameWorld(World world) {
         this.gameWorld = world;
         reloadTeamLocations(world);
+    }
+
+    public ShopManager getShopManager() {
+        return shopManager;
     }
 
     public void reloadTeamLocations(World world) {
@@ -118,6 +117,13 @@ public class MyPlugin extends JavaPlugin {
                 bedManager.setBed(team, bed);
             } else {
                 getLogger().warning("Missing bed for team: " + team.name());
+            }
+
+            Location shop = readOffsetLocation(sec.getConfigurationSection("shop"), world, ox, oy, oz);
+            if (shop != null) {
+                shopManager.spawnShopEntity(shop);
+            } else {
+                getLogger().warning("Missing shop for team: " + team.name());
             }
         }
 

@@ -2,6 +2,9 @@ package com.example.myplugin.game;
 
 import java.time.Duration;
 
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import com.example.myplugin.MyPlugin;
@@ -26,6 +29,14 @@ public class InGameCountdown extends BukkitRunnable {
 
             plugin.getPlayerManager().unfreezeAll();
             plugin.getGameManager().setInGame();
+
+            World gameWorld = plugin.getGameWorld();
+            if(gameWorld != null) {
+                for(Entity entity : gameWorld.getEntities()) {
+                    if(entity instanceof Item) entity.remove();
+                }
+            }
+
             plugin.getGeneratorManager().start(plugin);
             plugin.getGeneratorManager().startCleanupTask(plugin);
 

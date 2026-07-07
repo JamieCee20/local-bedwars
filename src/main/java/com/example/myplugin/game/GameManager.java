@@ -172,6 +172,8 @@ public class GameManager {
             }
         }
 
+        plugin.getShopManager().despawnShopEntity();
+
         // Tear down the game world — deleted from disk so the next game gets a clean slate
         plugin.getWorldSetupManager().teardownGameWorld();
     }
