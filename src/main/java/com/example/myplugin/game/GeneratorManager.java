@@ -127,19 +127,19 @@ public class GeneratorManager {
     private boolean isNearGenerator(Location loc) {
 
         for (Location d : diamondSpawns) {
-            if (d.getWorld().equals(loc.getWorld()) && d.distance(loc) < 3) return true;
+            if (d.getWorld().equals(loc.getWorld()) && d.distanceSquared(loc) < 9) return true;
         }
 
         for (Location e : emeraldSpawns) {
-            if (e.getWorld().equals(loc.getWorld()) && e.distance(loc) < 3) return true;
+            if (e.getWorld().equals(loc.getWorld()) && e.distanceSquared(loc) < 9) return true;
         }
 
         for (Location i : ironSpawns) {
-            if (i.getWorld().equals(loc.getWorld()) && i.distance(loc) < 3) return true;
+            if (i.getWorld().equals(loc.getWorld()) && i.distanceSquared(loc) < 9) return true;
         }
 
         for (Location g : goldSpawns) {
-            if (g.getWorld().equals(loc.getWorld()) && g.distance(loc) < 3) return true;
+            if (g.getWorld().equals(loc.getWorld()) && g.distanceSquared(loc) < 9) return true;
         }
 
         return false;
