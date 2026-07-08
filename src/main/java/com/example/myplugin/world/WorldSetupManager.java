@@ -77,6 +77,7 @@ public class WorldSetupManager {
         world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
         world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
         world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+        world.setGameRule(GameRule.NATURAL_REGENERATION, false);
 
         world.setTime(6000);
     }

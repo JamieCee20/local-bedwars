@@ -62,7 +62,7 @@ public class ShopInventory implements InventoryHolder {
     }
 
     private void buildBorder() {
-        ItemStack pane = new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
+        ItemStack pane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = pane.getItemMeta();
         meta.displayName(Component.empty()); // blank name — no tooltip clutter
         pane.setItemMeta(meta);
@@ -82,7 +82,7 @@ public class ShopInventory implements InventoryHolder {
 
         List<ShopItem> items = categoryItems.getOrDefault(category, List.of());
         for (int i = 0; i < items.size() && i < 36; i++) {
-            inventory.setItem(18 + i, makeShopIcon(items.get(i)));
+            inventory.setItem(19 + i, makeShopIcon(items.get(i)));
         }
     }
 
@@ -99,7 +99,7 @@ public class ShopInventory implements InventoryHolder {
     }
 
     public ShopItem getItemAt(int slot) {
-        int index = slot - 18; // content area starts at slot 18
+        int index = slot - 19; // content area starts at slot 19 (column 2 of row 3)
         List<ShopItem> items = categoryItems.getOrDefault(currentCategory, List.of());
         if (index < 0 || index >= items.size()) return null;
         return items.get(index);

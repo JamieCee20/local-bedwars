@@ -3,24 +3,30 @@ package com.example.myplugin.game;
 import com.example.myplugin.MyPlugin;
 import com.example.myplugin.data.ShopItem;
 import com.example.myplugin.enums.ShopCategory;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Piglin;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class ShopManager {
-    private final MyPlugin plugin;
-    private UUID shopEntityId;
+    private final NamespacedKey shopKey;
+    private final Set<UUID> shopEntityIds = new HashSet<>();
     private final Map<ShopCategory, List<ShopItem>> categoryItems;
 
     public ShopManager(MyPlugin plugin) {
-        this.plugin = plugin;
+        this.shopKey = new NamespacedKey(plugin, "shop_piglin");
         this.categoryItems = buildItems();
     }
 
@@ -53,38 +59,51 @@ public class ShopManager {
     }
 
     public void spawnShopEntity(Location location) {
-        // Clean up any old shop entity first (e.g. on game reset)
-        despawnShopEntity();
-
         Piglin piglin = (Piglin) location.getWorld()
             .spawnEntity(location, EntityType.PIGLIN);
 
-        piglin.customName(net.kyori.adventure.text.Component.text("Item Shop"));
-        piglin.setCustomNameVisible(true);
-        piglin.setAI(false);
-        piglin.setInvulnerable(true);
-        piglin.setSilent(true);
-        piglin.setRemoveWhenFarAway(false);
-        piglin.setImmuneToZombification(true);
+        piglin.setCustomNameVisible(false);
+        piglin.setAI(false);           // freeze in place — no wandering or bartering
+        piglin.setInvulnerable(true);  // can't be killed by players or environment
+        piglin.setSilent(true);        // no ambient sounds
+        piglin.setRemoveWhenFarAway(false); // won't despawn when players move away
+        piglin.setImmuneToZombification(true); // won't convert to zombified piglin in the overworld
+        piglin.setAdult();             // prevent random baby spawns
 
-        shopEntityId = piglin.getUniqueId();
+        // Tag with a namespaced key so we can reliably identify and clean up this piglin
+        // even if its UUID is lost (e.g. after a server restart or world reload)
+        piglin.getPersistentDataContainer().set(shopKey, PersistentDataType.BOOLEAN, true);
+
+        shopEntityIds.add(piglin.getUniqueId());
     }
 
     public void despawnShopEntity() {
-        if (shopEntityId == null) return;
+        // Step 1: remove all currently tracked piglins by UUID.
+        // Bukkit.getEntity searches across all loaded worlds, so this works even if
+        // the active game world reference has already been swapped to a new one.
+        for (UUID id : shopEntityIds) {
+            Entity entity = Bukkit.getEntity(id);
+            if (entity != null) entity.remove();
+        }
+        shopEntityIds.clear();
 
-        for (Entity entity : plugin.getGameWorld().getEntities()) {
-            if (entity.getUniqueId().equals(shopEntityId)) {
-                entity.remove();
-                break;
+        // Step 2: sweep every world for orphaned shop piglins that slipped through
+        // UUID tracking. Catches two cases:
+        //   - PDC-tagged piglins (spawned after tagging was introduced)
+        //   - Pre-PDC piglins (no tag, but identifiable by no-AI + invulnerable,
+        //     which is unique to our shop piglins since the game world has mob spawning off)
+        for (World world : Bukkit.getWorlds()) {
+            for (Piglin piglin : world.getEntitiesByClass(Piglin.class)) {
+                if (piglin.getPersistentDataContainer().has(shopKey, PersistentDataType.BOOLEAN)
+                        || (!piglin.hasAI() && piglin.isInvulnerable())) {
+                    piglin.remove();
+                }
             }
         }
-
-        shopEntityId = null;
     }
 
-    public UUID getShopEntityId() {
-        return shopEntityId;
+    public boolean isShopEntity(UUID uuid) {
+        return shopEntityIds.contains(uuid);
     }
 
     public Map<ShopCategory, List<ShopItem>> getCategoryItems() {

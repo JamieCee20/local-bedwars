@@ -2,6 +2,7 @@ package com.example.myplugin.listener;
 
 import com.example.myplugin.MyPlugin;
 import com.example.myplugin.enums.ShopCategory;
+import com.example.myplugin.player.PlayerData;
 import com.example.myplugin.ui.ShopInventory;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -25,8 +26,10 @@ public class ShopListener implements Listener {
     @EventHandler
     public void onEntityInteract(PlayerInteractEntityEvent event) {
         // Only care about our shop entity
-        if (!event.getRightClicked().getUniqueId()
-            .equals(plugin.getShopManager().getShopEntityId())) return;
+        if (!plugin.getShopManager().isShopEntity(event.getRightClicked().getUniqueId())) return;
+
+        // PlayerInteractEntityEvent fires for both hands — only handle the main hand
+        if (event.getHand() != org.bukkit.inventory.EquipmentSlot.HAND) return;
 
         event.setCancelled(true); // prevent default interact behaviour
 
@@ -93,7 +96,23 @@ public class ShopListener implements Listener {
         }
 
         inv.removeItem(cost);
-        inv.addItem(new ItemStack(shopItem.getMaterial(), shopItem.getQuantity()));
+
+        Material material = shopItem.getMaterial();
+        if (material == Material.WHITE_WOOL) {
+            com.example.myplugin.player.PlayerData data = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+            if (data != null && data.getTeam() != null) {
+                material = data.getTeam().getWoolMaterial();
+            }
+        }
+
+        if(material == Material.TERRACOTTA) {
+            PlayerData data = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+            if(data != null && data.getTeam() != null) {
+                material = data.getTeam().getTerracottaMaterial();
+            }
+        }
+
+        inv.addItem(new ItemStack(material, shopItem.getQuantity()));
         player.sendMessage(Component.text("Purchased!", NamedTextColor.GREEN));
     }
 
@@ -107,8 +126,7 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent event) {
-        if (!event.getEntity().getUniqueId()
-            .equals(plugin.getShopManager().getShopEntityId())) return;
+        if (!plugin.getShopManager().isShopEntity(event.getEntity().getUniqueId())) return;
         event.setCancelled(true);
     }
 }

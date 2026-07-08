@@ -91,6 +91,8 @@ public class MyPlugin extends JavaPlugin {
     }
 
     public void reloadTeamLocations(World world) {
+        // Clear any existing shop piglins before spawning fresh ones
+        shopManager.despawnShopEntity();
         // Resolve the paste origin once — all team offsets are relative to this point
         ConfigurationSection originSec = getConfig().getConfigurationSection("map.origin");
         double ox = originSec != null ? originSec.getDouble("x", 0) : 0;
@@ -167,10 +169,12 @@ public class MyPlugin extends JavaPlugin {
     private Location readOffsetLocation(ConfigurationSection sec, World world, double ox, double oy, double oz) {
         if (sec == null) return null;
         return new Location(
-                world,
-                sec.getDouble("x") + ox,
-                sec.getDouble("y") + oy,
-                sec.getDouble("z") + oz
+            world,
+            sec.getDouble("x") + ox,
+            sec.getDouble("y") + oy,
+            sec.getDouble("z") + oz,
+            (float) sec.getDouble("yaw", 0.0),
+        0f
         );
     }
 

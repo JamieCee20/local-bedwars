@@ -32,7 +32,8 @@ teams:
     shop:
       x: 64.0
       y: -2.0
-      z: 2.0
+      z: 1.0
+      yaw: 180.0
     generators:
       iron:
         x: 68.0
@@ -52,9 +53,10 @@ teams:
       y: -2.0
       z: -55.0
     shop:
-      x: 10.0
+      x: 9.0
       y: -2.0
       z: -58.0
+      yaw: 90.0
     generators:
       iron:
         x: 6.0
@@ -76,7 +78,8 @@ teams:
     shop:
       x: -72.0
       y: 0.0
-      z: 7.0
+      z: 8.0
+      yaw: 0.0
     generators:
       iron:
         x: -76.0
@@ -96,9 +99,10 @@ teams:
       y: -4
       z: 54.0
     shop:
-      x: -4.0
+      x: -3.0
       y: -4.0
       z: 58.0
+      yaw: -90.0
     generators:
       iron:
         x: 0.0
