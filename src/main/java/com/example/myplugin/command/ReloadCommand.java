@@ -30,6 +30,7 @@ public class ReloadCommand implements CommandExecutor {
         }
 
         plugin.reloadConfig();
+        plugin.getShopManager().reload(plugin.getConfig());
 
         // Re-apply team locations if a game world is already loaded
         if (plugin.getGameWorld() != null) {

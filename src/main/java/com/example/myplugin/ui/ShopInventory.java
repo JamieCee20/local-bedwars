@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,11 @@ public class ShopInventory implements InventoryHolder {
 
     // Map of category -> its items, passed in from ShopManager
     private final Map<ShopCategory, List<ShopItem>> categoryItems;
+    // Maps inventory slot -> ShopItem for the currently displayed category
+    private final Map<Integer, ShopItem> slotItemMap = new HashMap<>();
+
+    // Left and right column slots in the content area (rows 3-6) — kept as glass
+    private static final int[] BORDER_COLUMNS = {18, 26, 27, 35, 36, 44, 45, 53};
 
     public ShopInventory(Map<ShopCategory, List<ShopItem>> categoryItems) {
         this.categoryItems = categoryItems;
@@ -64,33 +70,64 @@ public class ShopInventory implements InventoryHolder {
     private void buildBorder() {
         ItemStack pane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = pane.getItemMeta();
-        meta.displayName(Component.empty()); // blank name — no tooltip clutter
+        meta.displayName(Component.empty());
         pane.setItemMeta(meta);
 
+        // Row 2 separator
         for (int slot = 9; slot <= 17; slot++) {
+            inventory.setItem(slot, pane);
+        }
+        // Left and right columns of the content area (rows 3-6)
+        for (int slot : BORDER_COLUMNS) {
             inventory.setItem(slot, pane);
         }
     }
 
     public void showCategory(ShopCategory category) {
         currentCategory = category;
+        slotItemMap.clear();
 
-        // Clear only the content area (rows 3-6, slots 18-53)
+        // Clear content slots that aren't part of the glass border
         for (int slot = 18; slot <= 53; slot++) {
-            inventory.setItem(slot, null);
+            if (!isBorderSlot(slot)) {
+                inventory.setItem(slot, null);
+            }
         }
 
         List<ShopItem> items = categoryItems.getOrDefault(category, List.of());
-        for (int i = 0; i < items.size() && i < 36; i++) {
-            inventory.setItem(19 + i, makeShopIcon(items.get(i)));
+        for (ShopItem item : items) {
+            int slot = item.getSlot();
+            if (isBorderSlot(slot)) {
+                org.bukkit.Bukkit.getLogger().warning(
+                    "[Shop] Item " + item.getMaterial() + " in " + category + " uses border slot " + slot + " — it will not be displayed. Valid slots: 19-25, 28-34, 37-43, 46-52.");
+            } else if (slot >= 18 && slot <= 53) {
+                inventory.setItem(slot, makeShopIcon(item));
+                slotItemMap.put(slot, item);
+            } else {
+                org.bukkit.Bukkit.getLogger().warning(
+                    "[Shop] Item " + item.getMaterial() + " in " + category + " has out-of-range slot " + slot + " — it will not be displayed.");
+            }
         }
+    }
+
+    private boolean isBorderSlot(int slot) {
+        for (int borderSlot : BORDER_COLUMNS) {
+            if (slot == borderSlot) return true;
+        }
+        return false;
     }
 
     private ItemStack makeShopIcon(ShopItem shopItem) {
         ItemStack item = new ItemStack(shopItem.getMaterial(), shopItem.getQuantity());
         ItemMeta meta = item.getItemMeta();
 
-        String currencyName = shopItem.getCurrency() == Material.GOLD_INGOT ? "Gold" : "Iron";
+        String currencyName = switch (shopItem.getCurrency()) {
+            case IRON_INGOT -> "Iron";
+            case GOLD_INGOT -> "Gold";
+            case DIAMOND    -> "Diamond";
+            case EMERALD    -> "Emerald";
+            default -> shopItem.getCurrency().name();
+        };
         meta.lore(List.of(
             Component.text("Cost: " + shopItem.getPrice() + " " + currencyName)
         ));
@@ -99,9 +136,6 @@ public class ShopInventory implements InventoryHolder {
     }
 
     public ShopItem getItemAt(int slot) {
-        int index = slot - 19; // content area starts at slot 19 (column 2 of row 3)
-        List<ShopItem> items = categoryItems.getOrDefault(currentCategory, List.of());
-        if (index < 0 || index >= items.size()) return null;
-        return items.get(index);
+        return slotItemMap.get(slot);
     }
 }

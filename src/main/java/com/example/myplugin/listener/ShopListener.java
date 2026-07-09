@@ -120,6 +120,8 @@ public class ShopListener implements Listener {
         return switch (mat) {
             case IRON_INGOT -> "Iron";
             case GOLD_INGOT -> "Gold";
+            case DIAMOND    -> "Diamond";
+            case EMERALD    -> "Emerald";
             default -> mat.name();
         };
     }

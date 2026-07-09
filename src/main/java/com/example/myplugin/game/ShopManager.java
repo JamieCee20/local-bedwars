@@ -8,11 +8,13 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Piglin;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,41 +23,55 @@ import java.util.Set;
 import java.util.UUID;
 
 public class ShopManager {
+    private final MyPlugin plugin;
     private final NamespacedKey shopKey;
     private final Set<UUID> shopEntityIds = new HashSet<>();
-    private final Map<ShopCategory, List<ShopItem>> categoryItems;
+    private Map<ShopCategory, List<ShopItem>> categoryItems;
 
     public ShopManager(MyPlugin plugin) {
+        this.plugin = plugin;
         this.shopKey = new NamespacedKey(plugin, "shop_piglin");
-        this.categoryItems = buildItems();
+        this.categoryItems = loadItems(plugin.getConfig());
     }
 
-    private Map<ShopCategory, List<ShopItem>> buildItems() {
+    public void reload(FileConfiguration config) {
+        this.categoryItems = loadItems(config);
+    }
+
+    private Map<ShopCategory, List<ShopItem>> loadItems(FileConfiguration config) {
         Map<ShopCategory, List<ShopItem>> map = new EnumMap<>(ShopCategory.class);
-
-        map.put(ShopCategory.BLOCKS, List.of(
-            new ShopItem(Material.WHITE_WOOL,    16, Material.IRON_INGOT, 4),
-            new ShopItem(Material.TERRACOTTA,    16, Material.IRON_INGOT, 12),
-            new ShopItem(Material.GLASS,          4, Material.IRON_INGOT, 12),
-            new ShopItem(Material.OAK_PLANKS,    16, Material.GOLD_INGOT, 4),
-            new ShopItem(Material.END_STONE,      4, Material.IRON_INGOT, 24),
-            new ShopItem(Material.OBSIDIAN,       4, Material.GOLD_INGOT, 8)
-        ));
-
-        map.put(ShopCategory.MELEE, List.of(
-            new ShopItem(Material.IRON_SWORD,  1, Material.IRON_INGOT, 10),
-            new ShopItem(Material.DIAMOND_SWORD, 1, Material.GOLD_INGOT, 6)
-        ));
-
-        map.put(ShopCategory.ARMOUR, List.of(
-            new ShopItem(Material.CHAINMAIL_BOOTS,     1, Material.IRON_INGOT, 40),
-            new ShopItem(Material.IRON_BOOTS,          1, Material.GOLD_INGOT, 6),
-            new ShopItem(Material.DIAMOND_BOOTS,       1, Material.GOLD_INGOT, 12)
-        ));
-
-        // Add TOOLS, RANGED, UTILITIES, POTIONS in the same way...
-
+        if (config.getConfigurationSection("shop") == null) {
+            plugin.getLogger().warning("No 'shop' section in config.yml — shop will be empty.");
+            return map;
+        }
+        for (ShopCategory category : ShopCategory.values()) {
+            List<Map<?, ?>> entries = config.getMapList("shop." + category.name());
+            List<ShopItem> items = new ArrayList<>();
+            for (Map<?, ?> entry : entries) {
+                try {
+                    Material material = Material.valueOf(((String) entry.get("material")).toUpperCase());
+                    int quantity = ((Number) entry.get("quantity")).intValue();
+                    Material currency = parseCurrency((String) entry.get("currency"));
+                    int price = ((Number) entry.get("price")).intValue();
+                    int slot = ((Number) entry.get("slot")).intValue();
+                    items.add(new ShopItem(material, quantity, currency, price, slot));
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Skipping invalid shop entry in " + category.name() + ": " + e.getMessage());
+                }
+            }
+            map.put(category, items);
+        }
         return map;
+    }
+
+    private Material parseCurrency(String name) {
+        return switch (name.toLowerCase()) {
+            case "iron"    -> Material.IRON_INGOT;
+            case "gold"    -> Material.GOLD_INGOT;
+            case "diamond" -> Material.DIAMOND;
+            case "emerald" -> Material.EMERALD;
+            default -> throw new IllegalArgumentException("Unknown currency '" + name + "'. Use: iron, gold, diamond, emerald");
+        };
     }
 
     public void spawnShopEntity(Location location) {
