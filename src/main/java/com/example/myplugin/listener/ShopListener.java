@@ -112,6 +112,13 @@ public class ShopListener implements Listener {
             }
         }
 
+        if(material == Material.GLASS) {
+            PlayerData data = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+            if(data != null && data.getTeam() != null) {
+                material = data.getTeam().getGlassMaterial();
+            }
+        }
+
         inv.addItem(new ItemStack(material, shopItem.getQuantity()));
         player.sendMessage(Component.text("Purchased!", NamedTextColor.GREEN));
     }
