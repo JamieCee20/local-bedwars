@@ -38,7 +38,7 @@ public class GeneratorManager {
     public void addIronSpawn(Location loc) { ironSpawns.add(loc);}
     public void addGoldSpawn(Location loc) { goldSpawns.add(loc);}
 
-    public void start(MyPlugin plugin) {
+    public void start(GameInstance instance) {
         // 🟡 DIAMONDS (20s)
         diamondTask = new BukkitRunnable() {
             @Override
@@ -48,7 +48,7 @@ public class GeneratorManager {
                 }
             }
         };
-        diamondTask.runTaskTimer(plugin, 20L * 15, 20L * 20);
+        diamondTask.runTaskTimer(instance.getPlugin(), 20L * 15, 20L * 20);
 
         // 🟢 EMERALDS (60s)
         emeraldTask = new BukkitRunnable() {
@@ -59,7 +59,7 @@ public class GeneratorManager {
                 }
             }
         };
-        emeraldTask.runTaskTimer(plugin, 20L * 30, 20L * 60);
+        emeraldTask.runTaskTimer(instance.getPlugin(), 20L * 30, 20L * 60);
 
         ironTask = new BukkitRunnable() {
             @Override
@@ -69,7 +69,7 @@ public class GeneratorManager {
                 }
             }
         };
-        ironTask.runTaskTimer(plugin, 20L * 5, 20L * 2); // Delay 5s, spawn every 2s
+        ironTask.runTaskTimer(instance.getPlugin(), 20L * 5, 20L * 2); // Delay 5s, spawn every 2s
 
         goldTask = new BukkitRunnable() {
             @Override
@@ -79,7 +79,7 @@ public class GeneratorManager {
                 }
             }
         };
-        goldTask.runTaskTimer(plugin, 20L * 5, 20L * 10); // Delay 5s, spawn every 10s
+        goldTask.runTaskTimer(instance.getPlugin(), 20L * 5, 20L * 10); // Delay 5s, spawn every 10s
     }
 
     private void spawnItem(Location loc, Material material) {
@@ -89,15 +89,14 @@ public class GeneratorManager {
         item.setCanMobPickup(false);
     }
 
-    public void startCleanupTask(MyPlugin plugin) {
+    public void startCleanupTask(GameInstance instance) {
         cleanupTask = new BukkitRunnable() {
             @Override
             public void run() {
-
-                for (Entity entity : plugin.getGameWorld().getEntities()) {
-
+                // Use instance.getGameWorld() instead of plugin.getGameWorld()
+                if (instance.getGameWorld() == null) return;
+                for (Entity entity : instance.getGameWorld().getEntities()) {
                     if (entity instanceof Item item) {
-
                         if (isNearGenerator(item.getLocation())) {
                             item.setTicksLived(1);
                         }
@@ -105,7 +104,7 @@ public class GeneratorManager {
                 }
             }
         };
-        cleanupTask.runTaskTimer(plugin, 0L, 20L * 30);
+        cleanupTask.runTaskTimer(instance.getPlugin(), 0L, 20L * 30);
     }
 
     public void stop() {

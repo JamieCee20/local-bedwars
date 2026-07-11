@@ -8,14 +8,13 @@ import com.example.myplugin.MyPlugin;
 
 public class PlayerJoinListener implements Listener {
 
-    private final MyPlugin plugin;
-
     public PlayerJoinListener(MyPlugin plugin) {
-        this.plugin = plugin;
+        // Reserved for any future Bedwars-specific join handling
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        event.getPlayer().teleport(plugin.getLobbyWorld().getSpawnLocation());
+        // Bedwars has no opinion on where a player spawns when joining the server.
+        // Spawn/hub routing belongs to a dedicated hub plugin.
     }
 }

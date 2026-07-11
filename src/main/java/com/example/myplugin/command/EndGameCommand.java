@@ -1,5 +1,6 @@
 package com.example.myplugin.command;
 
+import com.example.myplugin.game.GameInstance;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -20,20 +21,22 @@ public class EndGameCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-
-        if (!plugin.getGameManager().isInGame()) {
-            plugin.getServer().broadcast(Messages.parse("<red>Not currently in an active game!</red>"));
-            return false;
+        // If the sender is a player, end their specific game
+        if (sender instanceof Player player) {
+            GameInstance instance = plugin.getInstanceManager().getInstanceForPlayer(player.getUniqueId());
+            if (instance == null || !instance.getGameManager().isInGame()) {
+                player.sendMessage(Messages.parse("<red>You are not in an active game!</red>"));
+                return true;
+            }
+            instance.getGameManager().endGame(null);
+            return true;
         }
 
-        String winner = (args.length > 0) ? args[0] : "Unknown";
-
-        plugin.getServer().broadcast(
-                Component.text("Game Over! Winner: " + winner));
-
-        // Delegate to GameManager so reset logic (PlayerManager, BedManager, etc.) is centralised
-        plugin.getGameManager().endGame(null);
-
+        // Console sender — end all active games
+        plugin.getInstanceManager().getInstances().forEach(i -> {
+            if (i.getGameManager().isInGame()) i.getGameManager().endGame(null);
+        });
+        sender.sendMessage("All active games ended.");
         return true;
     }
 }

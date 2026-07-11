@@ -2,6 +2,7 @@ package com.example.myplugin.listener;
 
 import com.example.myplugin.MyPlugin;
 import com.example.myplugin.enums.ShopCategory;
+import com.example.myplugin.game.GameInstance;
 import com.example.myplugin.player.PlayerData;
 import com.example.myplugin.ui.ShopInventory;
 import net.kyori.adventure.text.Component;
@@ -25,49 +26,33 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onEntityInteract(PlayerInteractEntityEvent event) {
-        // Only care about our shop entity
-        if (!plugin.getShopManager().isShopEntity(event.getRightClicked().getUniqueId())) return;
-
-        // PlayerInteractEntityEvent fires for both hands — only handle the main hand
+        // Find the player's game — only in-game players can use the shop
+        GameInstance instance = plugin.getInstanceManager().getInstanceForPlayer(event.getPlayer().getUniqueId());
+        if (instance == null) return;
+        if (!instance.getShopManager().isShopEntity(event.getRightClicked().getUniqueId())) return;
         if (event.getHand() != org.bukkit.inventory.EquipmentSlot.HAND) return;
-
-        event.setCancelled(true); // prevent default interact behaviour
+        event.setCancelled(true);
 
         Player player = event.getPlayer();
-
-        // Only players in the game can use the shop
-        if (!plugin.getPlayerManager().isInGame(player.getUniqueId())) {
-            player.sendMessage(Component.text("You must be in a game to use the shop.", NamedTextColor.RED));
-            return;
-        }
-
-        // Open a fresh ShopInventory for this player
-        ShopInventory shop = new ShopInventory(plugin.getShopManager().getCategoryItems());
+        ShopInventory shop = new ShopInventory(instance.getShopManager().getCategoryItems());
         player.openInventory(shop.getInventory());
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // Check the top inventory (the shop) is ours — ignore all other inventories
         if (!(event.getInventory().getHolder() instanceof ShopInventory shop)) return;
-
-        event.setCancelled(true); // always cancel — items must NEVER be dragged out
-
-        // Ignore clicks in the player's own bottom inventory
-        if (event.getRawSlot() >= 54) return;
-
-        // Ignore null clicks (clicking empty space)
-        if (event.getCurrentItem() == null) return;
+        event.setCancelled(true);
+        if (event.getRawSlot() >= 54 || event.getCurrentItem() == null) return;
 
         Player player = (Player) event.getWhoClicked();
-        int slot = event.getRawSlot();
 
-        if (slot <= 8) {
-            handleNavClick(slot, shop);
-        } else if (slot >= 18) {
-            handleItemPurchase(slot, shop, player);
-        }
-        // slots 9-17 are the border — do nothing
+        // Need the instance to get the player's team (for wool/terracotta colour)
+        GameInstance instance = plugin.getInstanceManager().getInstanceForPlayer(player.getUniqueId());
+        if (instance == null) return;
+
+        int slot = event.getRawSlot();
+        if (slot <= 8) handleNavClick(slot, shop);
+        else if (slot >= 18) handleItemPurchase(slot, shop, player, instance);
     }
 
     private void handleNavClick(int slot, ShopInventory shop) {
@@ -79,7 +64,7 @@ public class ShopListener implements Listener {
         }
     }
 
-    private void handleItemPurchase(int slot, ShopInventory shop, Player player) {
+    private void handleItemPurchase(int slot, ShopInventory shop, Player player, GameInstance instance) {
         // Ask the shop which ShopItem sits at this slot for the current category
         com.example.myplugin.data.ShopItem shopItem = shop.getItemAt(slot);
         if (shopItem == null) return;
@@ -99,21 +84,21 @@ public class ShopListener implements Listener {
 
         Material material = shopItem.getMaterial();
         if (material == Material.WHITE_WOOL) {
-            com.example.myplugin.player.PlayerData data = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+            com.example.myplugin.player.PlayerData data = instance.getPlayerManager().getPlayer(player.getUniqueId());
             if (data != null && data.getTeam() != null) {
                 material = data.getTeam().getWoolMaterial();
             }
         }
 
         if(material == Material.TERRACOTTA) {
-            PlayerData data = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+            PlayerData data = instance.getPlayerManager().getPlayer(player.getUniqueId());
             if(data != null && data.getTeam() != null) {
                 material = data.getTeam().getTerracottaMaterial();
             }
         }
 
         if(material == Material.GLASS) {
-            PlayerData data = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+            PlayerData data = instance.getPlayerManager().getPlayer(player.getUniqueId());
             if(data != null && data.getTeam() != null) {
                 material = data.getTeam().getGlassMaterial();
             }
@@ -135,7 +120,12 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent event) {
-        if (!plugin.getShopManager().isShopEntity(event.getEntity().getUniqueId())) return;
-        event.setCancelled(true);
+        // Check every instance — the shop entity might belong to any game
+        for (var instance : plugin.getInstanceManager().getInstances()) {
+            if (instance.getShopManager().isShopEntity(event.getEntity().getUniqueId())) {
+                event.setCancelled(true);
+                return;
+            }
+        }
     }
 }

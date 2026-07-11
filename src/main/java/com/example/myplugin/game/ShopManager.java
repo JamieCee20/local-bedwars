@@ -23,15 +23,15 @@ import java.util.Set;
 import java.util.UUID;
 
 public class ShopManager {
-    private final MyPlugin plugin;
+    private final GameInstance instance;
     private final NamespacedKey shopKey;
     private final Set<UUID> shopEntityIds = new HashSet<>();
     private Map<ShopCategory, List<ShopItem>> categoryItems;
 
-    public ShopManager(MyPlugin plugin) {
-        this.plugin = plugin;
-        this.shopKey = new NamespacedKey(plugin, "shop_piglin");
-        this.categoryItems = loadItems(plugin.getConfig());
+    public ShopManager(GameInstance instance) {
+        this.instance = instance;
+        this.shopKey = new NamespacedKey(instance.getPlugin(), "shop_piglin");
+        this.categoryItems = loadItems(instance.getPlugin().getConfig());
     }
 
     public void reload(FileConfiguration config) {
@@ -41,7 +41,7 @@ public class ShopManager {
     private Map<ShopCategory, List<ShopItem>> loadItems(FileConfiguration config) {
         Map<ShopCategory, List<ShopItem>> map = new EnumMap<>(ShopCategory.class);
         if (config.getConfigurationSection("shop") == null) {
-            plugin.getLogger().warning("No 'shop' section in config.yml — shop will be empty.");
+            instance.getPlugin().getLogger().warning("No 'shop' section in config.yml — shop will be empty.");
             return map;
         }
         for (ShopCategory category : ShopCategory.values()) {
@@ -56,7 +56,7 @@ public class ShopManager {
                     int slot = ((Number) entry.get("slot")).intValue();
                     items.add(new ShopItem(material, quantity, currency, price, slot));
                 } catch (Exception e) {
-                    plugin.getLogger().warning("Skipping invalid shop entry in " + category.name() + ": " + e.getMessage());
+                    instance.getPlugin().getLogger().warning("Skipping invalid shop entry in " + category.name() + ": " + e.getMessage());
                 }
             }
             map.put(category, items);

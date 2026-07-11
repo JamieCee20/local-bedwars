@@ -7,6 +7,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
+import org.bukkit.Bukkit;
+
 public class PlayerManager {
     private final Map<UUID, PlayerData> players = new HashMap<>();
     private final Set<UUID> frozenPlayers = new HashSet<>();
@@ -43,6 +47,15 @@ public class PlayerManager {
         frozenPlayers.clear();
     }
 
+    // Shows a title screen to every registered player in this game.
+// Used instead of getServer().showTitle() so only in-game players see it.
+    public void showTitle(Title title) {
+        for (PlayerData data : players.values()) {
+            var player = Bukkit.getPlayer(data.getUuid());
+            if (player != null) player.showTitle(title);
+        }
+    }
+
     public void freezePlayer(UUID uuid) {
         frozenPlayers.add(uuid);
     }
@@ -53,5 +66,12 @@ public class PlayerManager {
 
     public boolean isFrozen(UUID uuid) {
         return frozenPlayers.contains(uuid);
+    }
+
+    public void broadcast(Component message) {
+        for (PlayerData data : players.values()) {
+            var player = Bukkit.getPlayer(data.getUuid());
+            if (player != null) player.sendMessage(message);
+        }
     }
 }

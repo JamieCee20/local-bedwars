@@ -7,61 +7,51 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.example.myplugin.MyPlugin;
-
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 
 public class InGameCountdown extends BukkitRunnable {
 
-    private final MyPlugin plugin;
+    private final GameInstance instance;
     private int time = 3;
 
-    public InGameCountdown(MyPlugin plugin) {
-        this.plugin = plugin;
+    public InGameCountdown(GameInstance instance) {
+        this.instance = instance;
     }
 
     @Override
     public void run() {
-
         if (time <= 0) {
+            instance.getPlayerManager().unfreezeAll();
+            instance.getGameManager().setInGame();
 
-            plugin.getPlayerManager().unfreezeAll();
-            plugin.getGameManager().setInGame();
-
-            World gameWorld = plugin.getGameWorld();
-            if(gameWorld != null) {
-                for(Entity entity : gameWorld.getEntities()) {
-                    if(entity instanceof Item) entity.remove();
+            // Clear any items that spawned during the freeze countdown
+            World gameWorld = instance.getGameWorld();
+            if (gameWorld != null) {
+                for (Entity entity : gameWorld.getEntities()) {
+                    if (entity instanceof Item) entity.remove();
                 }
             }
 
-            plugin.getGeneratorManager().start(plugin);
-            plugin.getGeneratorManager().startCleanupTask(plugin);
+            instance.getGeneratorManager().start(instance);
+            instance.getGeneratorManager().startCleanupTask(instance);
 
-            plugin.getServer().showTitle(
+            // Show "GO!" only to players in this game, not other simultaneous games
+            instance.getPlayerManager().showTitle(
                 Title.title(
                     Component.text("GO!", NamedTextColor.GREEN),
                     Component.text(""),
-                    Title.Times.times(
-                        Duration.ofMillis(0),
-                        Duration.ofSeconds(1),
-                        Duration.ofMillis(0))));
-
+                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO)));
             cancel();
             return;
         }
 
-        plugin.getServer().showTitle(
+        instance.getPlayerManager().showTitle(
             Title.title(
                 Component.text(String.valueOf(time), NamedTextColor.YELLOW),
                 Component.text("Get ready!"),
-                Title.Times.times(
-                    Duration.ofMillis(0),
-                    Duration.ofSeconds(1),
-                    Duration.ofMillis(0))));
-
+                Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO)));
         time--;
     }
 }

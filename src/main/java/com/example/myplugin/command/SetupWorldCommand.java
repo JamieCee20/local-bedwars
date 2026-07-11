@@ -87,11 +87,15 @@ public class SetupWorldCommand implements CommandExecutor {
             return;
         }
 
-        File schematicFile = plugin.getWorldSetupManager().resolveSchematicFile();
-
-        if (schematicFile == null) {
+        String schematicName = plugin.getConfig().getString("map.schematic", "map.schem");
+        File schematicFile = new File(plugin.getDataFolder(), schematicName);
+        if (!schematicFile.exists()) {
+            schematicFile = new File(plugin.getDataFolder().getParentFile(), "WorldEdit/schematics/" + schematicName);
+        }
+        if (!schematicFile.exists()) {
             player.sendMessage(Component.text(
-                    "Schematic not found — check console for the paths that were searched.", NamedTextColor.RED));
+                "Schematic '" + schematicName + "' not found in plugins/MyPlugin/ or WorldEdit/schematics/",
+                NamedTextColor.RED));
             return;
         }
 

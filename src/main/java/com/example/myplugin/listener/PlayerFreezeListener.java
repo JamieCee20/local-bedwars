@@ -1,5 +1,6 @@
 package com.example.myplugin.listener;
 
+import com.example.myplugin.game.GameInstance;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,8 +19,9 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onMove(PlayerMoveEvent event) {
-        if (!plugin.getPlayerManager().isFrozen(event.getPlayer().getUniqueId())) return;
-
+        GameInstance instance = plugin.getInstanceManager().getInstanceForPlayer(event.getPlayer().getUniqueId());
+        if (instance == null) return;
+        if (!instance.getPlayerManager().isFrozen(event.getPlayer().getUniqueId())) return;
         Location from = event.getFrom();
         Location to = event.getTo();
 

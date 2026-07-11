@@ -1,10 +1,13 @@
 package com.example.myplugin.listener;
 
+import com.example.myplugin.game.GameInstance;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import com.example.myplugin.MyPlugin;
+
+import java.util.UUID;
 
 public class PlayerQuitListener implements Listener {
 
@@ -16,19 +19,16 @@ public class PlayerQuitListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        var uuid = event.getPlayer().getUniqueId();
+        UUID uuid = event.getPlayer().getUniqueId();
+        // Find which game they were in — null means they were just in the hub
+        GameInstance instance = plugin.getInstanceManager().getInstanceForPlayer(uuid);
+        if (instance == null) return;
 
-        if (!plugin.getPlayerManager().isInGame(uuid)) return;
-
-        boolean wasInGame = plugin.getGameManager().isInGame();
-
-        plugin.getPlayerManager().removePlayer(uuid);
+        boolean wasInGame = instance.getGameManager().isInGame();
+        instance.getPlayerManager().removePlayer(uuid);
         event.getPlayer().getInventory().clear();
 
-        if (wasInGame) {
-            plugin.getGameManager().checkForWinner();
-        } else {
-            plugin.getLobbyManager().cancelCountdownIfNeeded();
-        }
+        if (wasInGame) instance.getGameManager().checkForWinner();
+        else instance.getLobbyManager().cancelCountdownIfNeeded();
     }
 }
